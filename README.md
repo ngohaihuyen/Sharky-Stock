@@ -203,7 +203,6 @@ Planned features for future releases:
 - LinkedIn: [Hai Huyen Ngo]
 
 ## Acknowledgments
-- **Ngo Quang Manh** - My mentor, who has guided and supported me patiently from my very first days learning mobile app development
 - **Marketstack API** for providing free stock data
 - **Android Developers** for excellent documentation
 - **JetBrains** for Kotlin language
