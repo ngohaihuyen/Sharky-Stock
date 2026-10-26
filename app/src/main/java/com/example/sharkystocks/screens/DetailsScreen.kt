@@ -348,7 +348,7 @@ fun DetailsScreen(
                     }
 
                     Button(
-                        onClick = { /* View chart */ },
+                        onClick = { navController.navigate("chart") },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondary

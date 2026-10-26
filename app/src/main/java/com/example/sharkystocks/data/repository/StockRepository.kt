@@ -4,7 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import com.example.sharkystocks.data.local.StockDatabase
 import com.example.sharkystocks.data.local.StockDetailEntity
+import com.example.sharkystocks.data.local.StockHistoryEntity
 import com.example.sharkystocks.data.local.StockListEntity
+import com.example.sharkystocks.data.model.ChartRange
+import com.example.sharkystocks.data.model.MarketstackStock
 import com.example.sharkystocks.data.network.ApiService
 import com.example.sharkystocks.data.network.apiService
 import kotlinx.coroutines.Dispatchers
@@ -23,10 +26,12 @@ open class StockRepository(
     }
     private val stockListDao = db?.stockListDao()
     private val stockDetailDao = db?.stockDetailDao()
+    private val stockHistoryDao = db?.stockHistoryDao()
 
 
     private var cachedSymbols: List<String>? = null
     private val cachedDetails = mutableMapOf<String, StockDetailEntity>()
+    private val cachedHistory = mutableMapOf<String, List<StockHistoryEntity>>()
 
 
     open suspend fun refreshHomeScreen(): List<String> {
@@ -168,5 +173,90 @@ open class StockRepository(
                 emptyList()
             }
         }
+    }
+
+
+    // ---------------- Chart (price history) ----------------
+
+    open suspend fun refreshChartScreen(
+        symbol: String,
+        forceRefresh: Boolean = false
+    ): List<StockHistoryEntity> {
+
+        if (context == null) {
+            val cached = cachedHistory[symbol]
+            if (cached != null && !forceRefresh) return cached
+
+            return try {
+                fetchHistoryFromNetworkAndCacheInMemory(symbol)
+            } catch (e: Exception) {
+                cached ?: throw e
+            }
+        }
+
+        return withContext(Dispatchers.IO) {
+            val cached = try {
+                stockHistoryDao!!.getStockHistory(symbol)
+            } catch (e: Exception) {
+                emptyList()
+            }
+
+            val isFresh = cached.isNotEmpty() &&
+                    System.currentTimeMillis() - cached.maxOf { it.lastUpdated } < HISTORY_CACHE_DURATION_MS
+
+            if (isFresh && !forceRefresh) {
+                cached
+            } else {
+                try {
+                    fetchHistoryFromNetworkAndCacheRoom(symbol)
+                } catch (e: Exception) {
+                    // Offline / rate-limited: fall back to old data if we have any
+                    if (cached.isNotEmpty()) cached else throw e
+                }
+            }
+        }
+    }
+
+    private suspend fun fetchHistoryFromNetworkAndCacheInMemory(symbol: String): List<StockHistoryEntity> {
+        val response = api.getStockHistory(symbols = symbol, limit = ChartRange.maxDays)
+        val history = response.data.toHistoryEntities(symbol)
+
+        cachedHistory[symbol] = history
+        return history
+    }
+
+    private suspend fun fetchHistoryFromNetworkAndCacheRoom(symbol: String): List<StockHistoryEntity> = withContext(Dispatchers.IO) {
+        val response = api.getStockHistory(symbols = symbol, limit = ChartRange.maxDays)
+        val history = response.data.toHistoryEntities(symbol)
+
+        if (history.isNotEmpty()) {
+            stockHistoryDao!!.deleteStockHistory(symbol)
+            stockHistoryDao!!.insertStockHistory(history)
+        }
+
+        history
+    }
+
+    private fun List<MarketstackStock>.toHistoryEntities(symbol: String): List<StockHistoryEntity> {
+        return this
+            .filter { it.symbol == symbol && !it.date.isNullOrBlank() }
+            .map { ms ->
+                StockHistoryEntity(
+                    symbol = ms.symbol,
+                    date = ms.date!!.take(10), // "2025-10-17T00:00:00+0000" -> "2025-10-17"
+                    open = ms.open,
+                    high = ms.high,
+                    low = ms.low,
+                    close = ms.close,
+                    volume = ms.volume
+                )
+            }
+            .distinctBy { it.date }
+            .sortedBy { it.date }
+    }
+
+    companion object {
+        // EOD data only changes once a day -> re-use cached history for 6 hours
+        private const val HISTORY_CACHE_DURATION_MS = 6 * 60 * 60 * 1000L
     }
 }

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.sharkystocks.data.repository.StockRepository
+import com.example.sharkystocks.data.model.ChartPoint
+import com.example.sharkystocks.data.model.ChartRange
 import com.example.sharkystocks.data.model.Stock
 import com.example.sharkystocks.mvi.StockAction
 import com.example.sharkystocks.mvi.StockState
@@ -119,6 +121,38 @@ open class StockViewModel(private val repository: StockRepository) : ViewModel()
 
     fun retryLoading() {
         refreshHomeScreen()
+    }
+
+    fun refreshChartScreen(selectedItem: String, forceRefresh: Boolean = false) {
+        fireAction(StockAction.FetchChart)
+
+        viewModelScope.launch {
+            try {
+                val history = repository.refreshChartScreen(selectedItem, forceRefresh)
+
+                val points = history
+                    .sortedBy { it.date }
+                    .map {
+                        ChartPoint(
+                            date = it.date,
+                            open = it.open,
+                            high = it.high,
+                            low = it.low,
+                            close = it.close,
+                            volume = it.volume
+                        )
+                    }
+
+                fireAction(StockAction.FetchChartSuccess(selectedItem, points))
+
+            } catch (e: Exception) {
+                fireAction(StockAction.FetchChartError("Failed to load chart: ${e.message}"))
+            }
+        }
+    }
+
+    fun selectChartRange(range: ChartRange) {
+        fireAction(StockAction.SelectChartRange(range))
     }
 }
 
