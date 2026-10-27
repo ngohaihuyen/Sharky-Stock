@@ -20,6 +20,15 @@ open class StockViewModel(private val repository: StockRepository) : ViewModel()
     private val _state = MutableStateFlow(StockState())
     val state: StateFlow<StockState> = _state.asStateFlow()
 
+    /**
+     * Historical closing prices for mini charts on the Home Screen.
+     * Key = stock symbol, value = closing prices ordered oldest -> newest.
+     * This is kept separate from StockState so the existing MVI reducer
+     * and the Details chart flow do not need to be changed.
+     */
+    private val _miniChartPrices = MutableStateFlow<Map<String, List<Float>>>(emptyMap())
+    val miniChartPrices: StateFlow<Map<String, List<Float>>> =
+        _miniChartPrices.asStateFlow()
 
     private fun fireAction(action: StockAction) {
         _state.value = stockReducer(_state.value, action)
@@ -147,6 +156,56 @@ open class StockViewModel(private val repository: StockRepository) : ViewModel()
 
             } catch (e: Exception) {
                 fireAction(StockAction.FetchChartError("Failed to load chart: ${e.message}"))
+            }
+        }
+    }
+
+    /**
+     * Load historical prices for the supplied stock symbols.
+     * The repository reuses its existing API and history cache.
+     * Each symbol is handled independently so one failed request does not
+     * prevent the remaining mini charts from loading.
+     */
+
+    fun refreshMiniCharts(
+        symbols: List<String>,
+        forceRefresh: Boolean = false
+    ) {
+        viewModelScope.launch {
+            symbols.distinct().forEach { symbol ->
+                try {
+                    val history = repository.refreshMiniChartScreen(
+                        symbol = symbol,
+                        forceRefresh = forceRefresh
+                    )
+
+                    val prices = history
+                        .sortedBy { it.date }
+                        .map { it.close.toFloat() }
+                        .filter { it.isFinite() && it > 0f }
+
+                    android.util.Log.d(
+                        "SharkyMiniChart",
+                        "$symbol: received ${prices.size} prices; " +
+                                "dates=${history.map { it.date }}"
+                    )
+
+                    if (prices.size >= 2) {
+                        _miniChartPrices.value =
+                            _miniChartPrices.value + (symbol to prices)
+                    } else {
+                        android.util.Log.w(
+                            "SharkyMiniChart",
+                            "$symbol: insufficient historical data"
+                        )
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e(
+                        "SharkyMiniChart",
+                        "Failed to load history for $symbol",
+                        e
+                    )
+                }
             }
         }
     }

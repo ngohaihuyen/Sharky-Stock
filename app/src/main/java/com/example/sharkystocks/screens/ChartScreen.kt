@@ -3,6 +3,7 @@ package com.example.sharkystocks.screens
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -33,7 +34,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,17 +69,23 @@ import com.example.sharkystocks.StockViewModel
 import com.example.sharkystocks.data.model.ChartPoint
 import com.example.sharkystocks.data.model.ChartRange
 import com.example.sharkystocks.data.model.Stock
-import com.example.sharkystocks.ui.theme.BlueGradientEnd
-import com.example.sharkystocks.ui.theme.BlueGradientStart
 import com.example.sharkystocks.ui.theme.ChartGreen
 import com.example.sharkystocks.ui.theme.ChartRed
-import com.example.sharkystocks.ui.theme.MintGreen
+import com.example.sharkystocks.ui.theme.ThemeManager
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private const val GRID_LINES = 3
+
+// Bảng màu chuẩn Sharky
+private val SharkyNavy = Color(0xFF071A23)
+private val SharkyNavySoft = Color(0xFF071A23)
+private val SharkyTeal = Color(0xFF55E6B1)
+private val SharkyMuted = Color(0xFF8FA8AF)
+private val SharkyLine = Color(0xFF24414A)
+private val SharkyWhite = Color(0xFFF4FAF8)
 
 @Composable
 fun ChartScreen(
@@ -88,6 +94,13 @@ fun ChartScreen(
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle()
     val selectedStock = state.value.selectedStock
+
+    // Khai báo màu động dựa trên ThemeManager
+    val pageBackground = if (ThemeManager.isDarkMode) SharkyNavy else Color(0xFFF2F7F6)
+    val textPrimary = if (ThemeManager.isDarkMode) SharkyWhite else Color(0xFF102B35)
+    val textSecondary = if (ThemeManager.isDarkMode) SharkyMuted else Color(0xFF60777D)
+    val cardBackground = if (ThemeManager.isDarkMode) SharkyNavySoft else Color.White
+    val borderColor = if (ThemeManager.isDarkMode) SharkyLine else Color(0xFFDDE9E6)
 
     LaunchedEffect(key1 = selectedStock?.symbol) {
         selectedStock?.symbol?.let { symbol ->
@@ -98,26 +111,18 @@ fun ChartScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surface
-                    )
-                )
-            )
+            .background(pageBackground)
     ) {
-
-        // Header (same style as DetailsScreen)
+        // Header đồng bộ với HomeScreen và DetailsScreen
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(BlueGradientStart, BlueGradientEnd)
+                    Brush.verticalGradient(
+                        colors = listOf(SharkyNavy, Color(0xFF0B3037))
                     )
                 )
-                .padding(vertical = 16.dp, horizontal = 16.dp)
+                .padding(vertical = 18.dp, horizontal = 16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -126,30 +131,31 @@ fun ChartScreen(
                 IconButton(
                     onClick = { navController.popBackStack() },
                     modifier = Modifier
+                        .size(42.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f))
+                        .background(Color.White.copy(alpha = 0.09f))
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.White
+                        tint = SharkyTeal
                     )
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(14.dp))
 
                 Column {
                     Text(
                         text = "Price Chart",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = SharkyWhite,
+                        fontSize = 23.sp,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = selectedStock?.let { "${it.symbol} • ${getCompanyName(it.symbol)}" }
                             ?: "Historical price performance",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = SharkyMuted,
+                        fontSize = 13.sp
                     )
                 }
             }
@@ -158,7 +164,7 @@ fun ChartScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(horizontal = 18.dp, vertical = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             if (selectedStock == null) {
@@ -167,12 +173,14 @@ fun ChartScreen(
                     title = "No Stock Selected",
                     message = "Please select a stock from the home screen",
                     buttonText = "Back to Home",
-                    onButtonClick = { navController.popBackStack() }
+                    onButtonClick = { navController.popBackStack() },
+                    textPrimary = textPrimary,
+                    textSecondary = textSecondary
                 )
             } else {
                 when (val chartState = state.value.chartState) {
                     StockChartState.Idle, StockChartState.Loading -> {
-                        ChartLoading()
+                        ChartLoading(textSecondary = textSecondary)
                     }
 
                     is StockChartState.Error -> {
@@ -184,7 +192,9 @@ fun ChartScreen(
                             isError = true,
                             onButtonClick = {
                                 viewModel.refreshChartScreen(selectedStock.symbol, forceRefresh = true)
-                            }
+                            },
+                            textPrimary = textPrimary,
+                            textSecondary = textSecondary
                         )
                     }
 
@@ -196,20 +206,25 @@ fun ChartScreen(
                             buttonText = "Retry",
                             onButtonClick = {
                                 viewModel.refreshChartScreen(selectedStock.symbol, forceRefresh = true)
-                            }
+                            },
+                            textPrimary = textPrimary,
+                            textSecondary = textSecondary
                         )
                     }
 
                     is StockChartState.Success -> {
                         if (chartState.symbol != selectedStock.symbol) {
-                            // Old chart of another stock is still in state -> wait for the new one
-                            ChartLoading()
+                            ChartLoading(textSecondary = textSecondary)
                         } else {
                             ChartContent(
                                 stock = selectedStock,
                                 points = chartState.points,
                                 selectedRange = state.value.chartRange,
-                                onRangeSelected = { viewModel.selectChartRange(it) }
+                                onRangeSelected = { viewModel.selectChartRange(it) },
+                                cardBackground = cardBackground,
+                                textPrimary = textPrimary,
+                                textSecondary = textSecondary,
+                                borderColor = borderColor
                             )
                         }
                     }
@@ -226,16 +241,19 @@ private fun ChartContent(
     stock: Stock,
     points: List<ChartPoint>,
     selectedRange: ChartRange,
-    onRangeSelected: (ChartRange) -> Unit
+    onRangeSelected: (ChartRange) -> Unit,
+    cardBackground: Color,
+    textPrimary: Color,
+    textSecondary: Color,
+    borderColor: Color
 ) {
-    // We fetch 6 months once, then just slice it for 1W / 1M / 3M
     val visiblePoints = remember(points, selectedRange) { points.takeLast(selectedRange.days) }
     var selectedIndex by remember(visiblePoints) { mutableStateOf<Int?>(null) }
-    val cardElevation = remember { Animatable(4f) }
+    val cardElevation = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
         cardElevation.animateTo(
-            targetValue = 8f,
+            targetValue = 0f,
             animationSpec = tween(durationMillis = 800, easing = LinearEasing)
         )
     }
@@ -259,27 +277,28 @@ private fun ChartContent(
             ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = cardBackground
+        ),
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(BlueGradientStart, BlueGradientEnd)
+                            Brush.linearGradient(
+                                colors = listOf(Color(0xFF174B50), Color(0xFF102C37))
                             )
                         )
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = stock.symbol,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
+                        color = SharkyTeal,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold
                     )
                 }
 
@@ -288,14 +307,14 @@ private fun ChartContent(
                 Column {
                     Text(
                         text = getCompanyName(stock.symbol),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = textPrimary,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = getSector(stock.symbol),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = textSecondary,
+                        fontSize = 12.sp
                     )
                 }
             }
@@ -304,39 +323,39 @@ private fun ChartContent(
 
             Text(
                 text = String.format(Locale.US, "$%.2f", displayedPoint.close),
-                style = MaterialTheme.typography.displayLarge.copy(fontSize = 32.sp),
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
+                color = textPrimary,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.ExtraBold
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(changeColor.copy(alpha = 0.1f))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(changeColor.copy(alpha = 0.12f))
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = if (isPositive) "▲" else "▼",
-                    style = MaterialTheme.typography.titleMedium,
                     color = changeColor,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = String.format(Locale.US, "%+.2f (%+.2f%%)", change, changePercent),
-                    style = MaterialTheme.typography.titleMedium,
                     color = changeColor,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (selectedIndex != null) formatChartDate(displayedPoint.date, withYear = true)
                     else "Past ${selectedRange.label}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = changeColor.copy(alpha = 0.8f)
+                    color = changeColor.copy(alpha = 0.8f),
+                    fontSize = 11.sp
                 )
             }
 
@@ -346,14 +365,17 @@ private fun ChartContent(
                 points = visiblePoints,
                 lineColor = lineColor,
                 selectedIndex = selectedIndex,
-                onSelectedIndexChange = { selectedIndex = it }
+                onSelectedIndexChange = { selectedIndex = it },
+                textSecondary = textSecondary,
+                cardBackground = cardBackground
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             ChartRangeSelector(
                 selectedRange = selectedRange,
-                onRangeSelected = onRangeSelected
+                onRangeSelected = onRangeSelected,
+                textSecondary = textSecondary
             )
         }
     }
@@ -362,8 +384,8 @@ private fun ChartContent(
 
     Text(
         text = "Range Stats",
-        style = MaterialTheme.typography.headlineSmall,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = textPrimary,
+        fontSize = 20.sp,
         fontWeight = FontWeight.Bold
     )
 
@@ -378,7 +400,11 @@ private fun ChartContent(
                 title = "Open",
                 value = String.format(Locale.US, "$%.2f", firstPoint.open),
                 iconRes = android.R.drawable.ic_media_play,
-                color = MaterialTheme.colorScheme.primary
+                color = textPrimary,
+                cardBackground = cardBackground,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                borderColor = borderColor
             )
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -386,7 +412,11 @@ private fun ChartContent(
                 title = "Close",
                 value = String.format(Locale.US, "$%.2f", lastPoint.close),
                 iconRes = android.R.drawable.ic_media_pause,
-                color = MaterialTheme.colorScheme.primary
+                color = textPrimary,
+                cardBackground = cardBackground,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                borderColor = borderColor
             )
         }
     }
@@ -402,7 +432,11 @@ private fun ChartContent(
                 title = "${selectedRange.label} High",
                 value = String.format(Locale.US, "$%.2f", visiblePoints.maxOf { it.high }),
                 iconRes = android.R.drawable.arrow_up_float,
-                color = ChartGreen
+                color = ChartGreen,
+                cardBackground = cardBackground,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                borderColor = borderColor
             )
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -410,7 +444,11 @@ private fun ChartContent(
                 title = "${selectedRange.label} Low",
                 value = String.format(Locale.US, "$%.2f", visiblePoints.minOf { it.low }),
                 iconRes = android.R.drawable.arrow_down_float,
-                color = ChartRed
+                color = ChartRed,
+                cardBackground = cardBackground,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                borderColor = borderColor
             )
         }
     }
@@ -426,7 +464,11 @@ private fun ChartContent(
                 title = "Avg Volume",
                 value = formatVolume(visiblePoints.map { it.volume }.average()),
                 iconRes = android.R.drawable.ic_menu_sort_by_size,
-                color = MintGreen
+                color = if (ThemeManager.isDarkMode) SharkyTeal else Color(0xFF167A59),
+                cardBackground = cardBackground,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                borderColor = borderColor
             )
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -434,7 +476,11 @@ private fun ChartContent(
                 title = "Trading Days",
                 value = visiblePoints.size.toString(),
                 iconRes = android.R.drawable.ic_menu_my_calendar,
-                color = MaterialTheme.colorScheme.secondary
+                color = textSecondary,
+                cardBackground = cardBackground,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                borderColor = borderColor
             )
         }
     }
@@ -445,8 +491,8 @@ private fun ChartContent(
         text = "End-of-day prices from Marketstack • " +
                 "${formatChartDate(firstPoint.date, withYear = true)} – ${formatChartDate(lastPoint.date, withYear = true)}",
         modifier = Modifier.fillMaxWidth(),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+        color = textSecondary.copy(alpha = 0.7f),
+        fontSize = 11.sp,
         textAlign = TextAlign.Center
     )
 }
@@ -457,12 +503,13 @@ fun StockLineChart(
     lineColor: Color,
     selectedIndex: Int?,
     onSelectedIndexChange: (Int?) -> Unit,
+    textSecondary: Color,
+    cardBackground: Color,
     modifier: Modifier = Modifier
 ) {
     val drawProgress = remember { Animatable(0f) }
     val currentOnSelectedIndexChange by rememberUpdatedState(onSelectedIndexChange)
 
-    // Re-play the "drawing" animation whenever the data / range changes
     LaunchedEffect(points) {
         drawProgress.snapTo(0f)
         drawProgress.animateTo(
@@ -475,10 +522,10 @@ fun StockLineChart(
     val minPrice = points.minOfOrNull { it.close } ?: 0.0
     val priceSpan = if (maxPrice - minPrice > 0.0) maxPrice - minPrice else 1.0
 
-    val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-    val guideColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
-    val labelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-    val dotBorderColor = MaterialTheme.colorScheme.surface
+    val gridColor = if (ThemeManager.isDarkMode) SharkyWhite.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.08f)
+    val guideColor = if (ThemeManager.isDarkMode) SharkyWhite.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.35f)
+    val labelColor = textSecondary
+    val dotBorderColor = cardBackground
 
     Row(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.weight(1f)) {
@@ -486,7 +533,6 @@ fun StockLineChart(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp)
-                    // Touch / drag on the chart to inspect a specific day
                     .pointerInput(points) {
                         fun indexAt(x: Float): Int {
                             if (points.size <= 1 || size.width == 0) return 0
@@ -505,7 +551,6 @@ fun StockLineChart(
                                 if (!change.pressed) break
 
                                 val delta = change.positionChange()
-                                // Horizontal drag belongs to the chart, vertical drag still scrolls the screen
                                 if (abs(delta.x) > abs(delta.y)) change.consume()
 
                                 currentOnSelectedIndexChange(indexAt(change.position.x))
@@ -518,13 +563,14 @@ fun StockLineChart(
                 val topPadding = 8.dp.toPx()
                 val bottomPadding = 8.dp.toPx()
                 val chartHeight = size.height - topPadding - bottomPadding
+
                 val stepX = if (points.size > 1) size.width / (points.size - 1) else 0f
 
                 fun xAt(index: Int): Float = index * stepX
                 fun yAt(price: Double): Float =
                     topPadding + ((maxPrice - price) / priceSpan * chartHeight).toFloat()
 
-                // Grid lines
+                // Lines
                 val dashEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
                 for (i in 0..GRID_LINES) {
                     val y = topPadding + chartHeight * i / GRID_LINES
@@ -548,7 +594,6 @@ fun StockLineChart(
                     return@Canvas
                 }
 
-                // Line + gradient area, drawn progressively for the intro animation
                 val visibleCount = (points.size * drawProgress.value).toInt().coerceIn(2, points.size)
                 val linePath = Path()
                 val fillPath = Path()
@@ -587,7 +632,6 @@ fun StockLineChart(
                     )
                 )
 
-                // Vertical guide line for the touched day
                 selectedIndex?.coerceIn(0, points.lastIndex)?.let { index ->
                     drawLine(
                         color = guideColor,
@@ -597,7 +641,6 @@ fun StockLineChart(
                     )
                 }
 
-                // Dot on the touched day, or on the latest day once the animation is done
                 val dotIndex = selectedIndex?.coerceIn(0, points.lastIndex)
                     ?: if (drawProgress.value >= 1f) points.lastIndex else null
 
@@ -610,7 +653,6 @@ fun StockLineChart(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Date labels under the chart
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -618,26 +660,25 @@ fun StockLineChart(
                 if (points.isNotEmpty()) {
                     Text(
                         text = formatChartDate(points.first().date),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = labelColor
+                        color = labelColor,
+                        fontSize = 11.sp
                     )
                     if (points.size > 2) {
                         Text(
                             text = formatChartDate(points[points.size / 2].date),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = labelColor
+                            color = labelColor,
+                            fontSize = 11.sp
                         )
                     }
                     Text(
                         text = formatChartDate(points.last().date),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = labelColor
+                        color = labelColor,
+                        fontSize = 11.sp
                     )
                 }
             }
         }
 
-        // Price labels on the right, aligned with the grid lines
         Column(
             modifier = Modifier
                 .height(220.dp)
@@ -649,8 +690,8 @@ fun StockLineChart(
                 val price = maxPrice - (maxPrice - minPrice) * i / GRID_LINES
                 Text(
                     text = formatAxisPrice(price),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = labelColor
+                    color = labelColor,
+                    fontSize = 11.sp
                 )
             }
         }
@@ -660,13 +701,16 @@ fun StockLineChart(
 @Composable
 private fun ChartRangeSelector(
     selectedRange: ChartRange,
-    onRangeSelected: (ChartRange) -> Unit
+    onRangeSelected: (ChartRange) -> Unit,
+    textSecondary: Color
 ) {
+    val containerBg = if (ThemeManager.isDarkMode) Color.White.copy(alpha = 0.05f) else Color(0xFFE8F1EF)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+            .background(containerBg)
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -678,9 +722,7 @@ private fun ChartRangeSelector(
                     .weight(1f)
                     .clip(RoundedCornerShape(10.dp))
                     .background(
-                        if (isSelected) Brush.horizontalGradient(
-                            colors = listOf(BlueGradientStart, BlueGradientEnd)
-                        ) else SolidColor(Color.Transparent)
+                        if (isSelected) SolidColor(SharkyTeal) else SolidColor(Color.Transparent)
                     )
                     .clickable { onRangeSelected(range) }
                     .padding(vertical = 8.dp),
@@ -688,10 +730,9 @@ private fun ChartRangeSelector(
             ) {
                 Text(
                     text = range.label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (isSelected) Color.White
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    color = if (isSelected) SharkyNavy else textSecondary,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 12.sp
                 )
             }
         }
@@ -699,7 +740,7 @@ private fun ChartRangeSelector(
 }
 
 @Composable
-private fun ChartLoading() {
+private fun ChartLoading(textSecondary: Color) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -711,14 +752,14 @@ private fun ChartLoading() {
             verticalArrangement = Arrangement.Center
         ) {
             CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
+                color = SharkyTeal,
                 strokeWidth = 3.dp
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 "Loading price history...",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = textSecondary,
+                fontSize = 13.sp
             )
         }
     }
@@ -731,6 +772,8 @@ private fun ChartMessage(
     message: String,
     buttonText: String,
     onButtonClick: () -> Unit,
+    textPrimary: Color,
+    textSecondary: Color,
     isError: Boolean = false
 ) {
     Box(
@@ -751,27 +794,27 @@ private fun ChartMessage(
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = if (isError) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                color = if (isError) ChartRed else textPrimary,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                color = textSecondary,
+                fontSize = 13.sp,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = onButtonClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = SharkyTeal,
+                    contentColor = SharkyNavy
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text(buttonText, fontWeight = FontWeight.Medium)
+                Text(buttonText, fontWeight = FontWeight.Bold)
             }
         }
     }

@@ -13,11 +13,32 @@ import com.example.sharkystocks.data.network.apiService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
 
 open class StockRepository(
     private val context: Context? = null,
     private val api: ApiService = apiService
 ) {
+
+    private fun formatApiDate(calendar: Calendar): String {
+        return SimpleDateFormat(
+            "yyyy-MM-dd",
+            Locale.US
+        ).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.format(calendar.time)
+    }
+
+    private fun getHistoryDateRange(): Pair<String, String> {
+        val to = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+        val from = to.clone() as Calendar
+        from.add(Calendar.DAY_OF_YEAR, -14)
+
+        return formatApiDate(from) to formatApiDate(to)
+    }
 
     private val db = context?.let {
         Room.databaseBuilder(it, StockDatabase::class.java, "stock-database")
@@ -217,8 +238,29 @@ open class StockRepository(
         }
     }
 
+    open suspend fun refreshMiniChartScreen(
+        symbol: String,
+        forceRefresh: Boolean = false
+    ): List<StockHistoryEntity> {
+        return refreshChartScreen(
+            symbol = symbol,
+            forceRefresh = forceRefresh
+        )
+            .sortedBy { it.date }
+            .takeLast(MINI_CHART_POINTS)
+    }
     private suspend fun fetchHistoryFromNetworkAndCacheInMemory(symbol: String): List<StockHistoryEntity> {
-        val response = api.getStockHistory(symbols = symbol, limit = ChartRange.maxDays)
+
+        val (dateFrom, dateTo) = getHistoryDateRange()
+
+        val response = api.getStockHistory(
+            symbols = symbol,
+            dateFrom = dateFrom,
+            dateTo = dateTo,
+            sort = "ASC",
+            limit = 100
+        )
+
         val history = response.data.toHistoryEntities(symbol)
 
         cachedHistory[symbol] = history
@@ -226,7 +268,17 @@ open class StockRepository(
     }
 
     private suspend fun fetchHistoryFromNetworkAndCacheRoom(symbol: String): List<StockHistoryEntity> = withContext(Dispatchers.IO) {
-        val response = api.getStockHistory(symbols = symbol, limit = ChartRange.maxDays)
+
+        val (dateFrom, dateTo) = getHistoryDateRange()
+
+        val response = api.getStockHistory(
+            symbols = symbol,
+            dateFrom = dateFrom,
+            dateTo = dateTo,
+            sort = "ASC",
+            limit = 100
+        )
+
         val history = response.data.toHistoryEntities(symbol)
 
         if (history.isNotEmpty()) {
@@ -258,5 +310,8 @@ open class StockRepository(
     companion object {
         // EOD data only changes once a day -> re-use cached history for 6 hours
         private const val HISTORY_CACHE_DURATION_MS = 6 * 60 * 60 * 1000L
+
+        // Number of historical points displayed in each mini chart.
+        private const val MINI_CHART_POINTS = 7
     }
 }

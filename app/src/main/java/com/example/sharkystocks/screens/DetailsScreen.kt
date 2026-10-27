@@ -1,8 +1,7 @@
 package com.example.sharkystocks.screens
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,17 +21,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.BookmarkAdd
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.CurrencyExchange
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,414 +47,537 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.sharkystocks.StockListState
 import com.example.sharkystocks.StockViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.sharkystocks.ui.theme.BlueGradientEnd
-import com.example.sharkystocks.ui.theme.BlueGradientStart
 import com.example.sharkystocks.ui.theme.ChartGreen
 import com.example.sharkystocks.ui.theme.ChartRed
-import com.example.sharkystocks.ui.theme.MintGreen
+import com.example.sharkystocks.ui.theme.ThemeManager
+
+private val SharkyNavy = Color(0xFF071A23)
+private val SharkyNavySoft = Color(0xFF071A23)
+private val SharkyTeal = Color(0xFF55E6B1)
+private val SharkyMuted = Color(0xFF8FA8AF)
+private val SharkyLine = Color(0xFF24414A)
+private val SharkyWhite = Color(0xFFF4FAF8)
 
 @Composable
 fun DetailsScreen(
     navController: NavController,
     viewModel: StockViewModel
 ) {
-    val state = viewModel.state.collectAsStateWithLifecycle()
-    val cardElevation = remember { Animatable(4f) }
-    val contentAlpha = remember { Animatable(0f) }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val stock = state.selectedStock
 
-    LaunchedEffect(key1 = state.value.selectedStock) {
-        state.value.selectedStock?.symbol?.let { symbol ->
+    val elevation by animateDpAsState(
+        targetValue = 0.dp,
+        label = "details_card_elevation"
+    )
+
+
+    val pageBackground = if (ThemeManager.isDarkMode) SharkyNavy else Color(0xFFF2F7F6)
+    val textPrimary = if (ThemeManager.isDarkMode) SharkyWhite else Color(0xFF102B35)
+    val textSecondary = if (ThemeManager.isDarkMode) SharkyMuted else Color(0xFF60777D)
+    val cardBackground = if (ThemeManager.isDarkMode) SharkyNavySoft else Color.White
+    val borderColor = if (ThemeManager.isDarkMode) SharkyLine else Color(0xFFDDE9E6)
+
+    LaunchedEffect(stock?.symbol) {
+        stock?.symbol?.let { symbol ->
             viewModel.refreshDetailsScreen(symbol)
-
-
-            cardElevation.animateTo(
-                targetValue = 8f,
-                animationSpec = tween(durationMillis = 800, easing = LinearEasing)
-            )
-
-
-            contentAlpha.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 600, easing = LinearEasing)
-            )
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surface
-                    )
-                )
-            )
+            .background(pageBackground)
     ) {
-
-        Box(
+        // Header
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(BlueGradientStart, BlueGradientEnd)
+                    Brush.verticalGradient(
+                        colors = listOf(SharkyNavy, Color(0xFF0B3037))
                     )
                 )
-                .padding(vertical = 16.dp, horizontal = 16.dp)
+                .padding(horizontal = 16.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.09f))
             ) {
-                IconButton(
-                    onClick = { navController.popBackStack() },
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f))
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = SharkyTeal
+                )
+            }
 
-                Spacer(modifier = Modifier.width(16.dp))
+            Spacer(Modifier.width(14.dp))
 
-                Column {
-                    Text(
-                        text = "Stock Details",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Real-time analytics & insights",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
-                }
+            Column {
+                Text(
+                    text = "Stock Details",
+                    color = SharkyWhite,
+                    fontSize = 23.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Your market at a glance",
+                    color = SharkyMuted,
+                    fontSize = 13.sp
+                )
             }
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            if (state.value.stockListState == StockListState.Loading && state.value.selectedStock == null) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Image(
-                            painter = painterResource(android.R.drawable.stat_sys_download),
-                            contentDescription = "Loading",
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            "Loading stock details...",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                    }
-                }
-            } else if (state.value.selectedStock != null) {
-                val stock = state.value.selectedStock!!
-                val isPositive = !stock.change.startsWith("-")
-                val changeColor = if (isPositive) ChartGreen else ChartRed
+            when {
+                stock != null -> {
+                    val isPositive = !stock.change.trim().startsWith("-")
+                    val changeColor = if (isPositive) ChartGreen else ChartRed
 
-
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(
-                            elevation = cardElevation.value.dp,
-                            shape = RoundedCornerShape(20.dp)
+                    // Main stock overview
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(
+                                elevation = elevation,
+                                shape = RoundedCornerShape(24.dp)
+                            ),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = cardBackground
                         ),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        border = BorderStroke(1.dp, borderColor)
                     ) {
-
-                        Box(
+                        Column(
                             modifier = Modifier
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.horizontalGradient(
-                                        colors = listOf(BlueGradientStart, BlueGradientEnd)
+                                .fillMaxWidth()
+                                .padding(22.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(58.dp)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(
+                                            Brush.linearGradient(
+                                                colors = listOf(Color(0xFF174B50), Color(0xFF102C37))
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stock.symbol,
+                                        color = SharkyTeal,
+                                        fontSize = if (stock.symbol.length > 4) 14.sp else 18.sp,
+                                        fontWeight = FontWeight.ExtraBold
                                     )
+                                }
+
+                                Spacer(Modifier.width(14.dp))
+
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = getCompanyName(stock.symbol),
+                                        color = textPrimary,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = getSector(stock.symbol),
+                                        color = textSecondary,
+                                        fontSize = 13.sp
+                                    )
+                                }
+
+                                Icon(
+                                    imageVector = Icons.Default.Business,
+                                    contentDescription = null,
+                                    tint = SharkyTeal,
+                                    modifier = Modifier.size(22.dp)
                                 )
-                                .padding(horizontal = 24.dp, vertical = 12.dp)
-                        ) {
+                            }
+
+                            Spacer(Modifier.height(28.dp))
+
                             Text(
-                                text = stock.symbol,
-                                style = MaterialTheme.typography.displaySmall,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
+                                text = "CURRENT PRICE",
+                                color = textSecondary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 1.5.sp
                             )
-                        }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(Modifier.height(8.dp))
 
-                        Text(
-                            text = getCompanyName(stock.symbol),
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Text(
-                            text = getSector(stock.symbol),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-
-                        Text(
-                            text = stock.price,
-                            style = MaterialTheme.typography.displayLarge.copy(fontSize = 36.sp),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(changeColor.copy(alpha = 0.1f))
-                                .padding(horizontal = 20.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
                             Text(
-                                text = if (isPositive) "▲" else "▼",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = changeColor,
-                                fontWeight = FontWeight.Bold
+                                text = stock.price,
+                                color = textPrimary,
+                                fontSize = 36.sp,
+                                fontWeight = FontWeight.ExtraBold
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column(horizontalAlignment = Alignment.Start) {
+
+                            Spacer(Modifier.height(14.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(changeColor.copy(alpha = 0.12f))
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = "${stock.change} (${stock.changePercent})",
-                                    style = MaterialTheme.typography.titleLarge,
+                                    text = if (isPositive) "↗" else "↘",
                                     color = changeColor,
+                                    fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold
                                 )
+
+                                Spacer(Modifier.width(8.dp))
+
+                                Column {
+                                    Text(
+                                        text = "${stock.change} (${stock.changePercent})",
+                                        color = changeColor,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = if (isPositive) "Positive movement" else "Negative movement",
+                                        color = changeColor.copy(alpha = 0.8f),
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(18.dp))
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(7.dp)
+                                        .clip(CircleShape)
+                                        .background(SharkyTeal)
+                                )
+                                Spacer(Modifier.width(7.dp))
                                 Text(
-                                    text = if (isPositive) "Gain Today" else "Loss Today",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = changeColor.copy(alpha = 0.8f)
+                                    text = "Latest available market data",
+                                    color = textSecondary,
+                                    fontSize = 12.sp
                                 )
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-
-                Text(
-                    text = "Market Stats",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        InfoCard(
-                            title = "Market Cap",
-                            value = getMarketCap(stock.symbol),
-                            iconRes = android.R.drawable.ic_menu_my_calendar,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        InfoCard(
-                            title = "Volume",
-                            value = getVolume(stock.symbol),
-                            iconRes = android.R.drawable.ic_menu_sort_by_size,
-                            color = MintGreen
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        InfoCard(
-                            title = "52W High",
-                            value = get52WeekHigh(stock.symbol),
-                            iconRes = android.R.drawable.arrow_up_float,
-                            color = ChartGreen
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        InfoCard(
-                            title = "52W Low",
-                            value = get52WeekLow(stock.symbol),
-                            iconRes = android.R.drawable.arrow_down_float,
-                            color = ChartRed
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Action Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Button(
-                        onClick = { /* Add to watchlist */ },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Add to Watchlist", fontWeight = FontWeight.Medium)
-                    }
-
-                    Button(
-                        onClick = { navController.navigate("chart") },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("View Chart", fontWeight = FontWeight.Medium)
-                    }
-                }
-            } else {
-                // No stock selected
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Image(
-                            painter = painterResource(android.R.drawable.ic_menu_search),
-                            contentDescription = "No selection",
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No Stock Selected",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "Please select a stock from the home screen",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(
-                            onClick = { navController.popBackStack() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+                    // Market statistics
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Back to Home", fontWeight = FontWeight.Medium)
+                            Box(
+                                modifier = Modifier
+                                    .width(4.dp)
+                                    .height(23.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(SharkyTeal)
+                            )
+
+                            Spacer(Modifier.width(10.dp))
+
+                            Text(
+                                text = "Market Statistics",
+                                color = textPrimary,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(Modifier.weight(1f)) {
+                                InfoCard(
+                                    title = "Market Cap",
+                                    value = getMarketCap(stock.symbol),
+                                    iconRes = android.R.drawable.ic_menu_my_calendar,
+                                    color = textPrimary,
+                                    cardBackground = cardBackground,
+                                    textPrimary = textPrimary,
+                                    textSecondary = textSecondary,
+                                    borderColor = borderColor
+                                )
+                            }
+
+                            Box(Modifier.weight(1f)) {
+                                InfoCard(
+                                    title = "Volume",
+                                    value = getVolume(stock.symbol),
+                                    iconRes = android.R.drawable.ic_menu_sort_by_size,
+                                    color = if (ThemeManager.isDarkMode) SharkyTeal else Color(0xFF167A59),
+                                    cardBackground = cardBackground,
+                                    textPrimary = textPrimary,
+                                    textSecondary = textSecondary,
+                                    borderColor = borderColor
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(Modifier.weight(1f)) {
+                                InfoCard(
+                                    title = "52W High",
+                                    value = get52WeekHigh(stock.symbol),
+                                    iconRes = android.R.drawable.arrow_up_float,
+                                    color = ChartGreen,
+                                    cardBackground = cardBackground,
+                                    textPrimary = textPrimary,
+                                    textSecondary = textSecondary,
+                                    borderColor = borderColor
+                                )
+                            }
+
+                            Box(Modifier.weight(1f)) {
+                                InfoCard(
+                                    title = "52W Low",
+                                    value = get52WeekLow(stock.symbol),
+                                    iconRes = android.R.drawable.arrow_down_float,
+                                    color = ChartRed,
+                                    cardBackground = cardBackground,
+                                    textPrimary = textPrimary,
+                                    textSecondary = textSecondary,
+                                    borderColor = borderColor
+                                )
+                            }
+                        }
+                    }
+
+                    // Actions
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                // TODO: Connect to the watchlist feature.
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(54.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = cardBackground,
+                                contentColor = textPrimary
+                            ),
+                            border = BorderStroke(1.dp, borderColor)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BookmarkAdd,
+                                contentDescription = null,
+                                tint = SharkyTeal
+                            )
+                            Spacer(Modifier.width(9.dp))
+                            Text(
+                                text = "Add to Watchlist",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                navController.navigate("chart")
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SharkyTeal,
+                                contentColor = SharkyNavy
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ShowChart,
+                                contentDescription = null
+                            )
+                            Spacer(Modifier.width(9.dp))
+                            Text(
+                                text = "View Price Chart",
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
+
+                state.stockListState == StockListState.Loading -> {
+                    LoadingDetails(textSecondary = textSecondary)
+                }
+
+                else -> {
+                    EmptyDetails(
+                        onBack = { navController.popBackStack() },
+                        textPrimary = textPrimary,
+                        textSecondary = textSecondary
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
+
 
 @Composable
 fun InfoCard(
     title: String,
     value: String,
     iconRes: Int,
-    color: Color
+    color: Color,
+    cardBackground: Color = if (ThemeManager.isDarkMode) SharkyNavySoft else Color.White,
+    textPrimary: Color = if (ThemeManager.isDarkMode) SharkyWhite else Color(0xFF102B35),
+    textSecondary: Color = if (ThemeManager.isDarkMode) SharkyMuted else Color(0xFF60777D),
+    borderColor: Color = if (ThemeManager.isDarkMode) SharkyLine else Color(0xFFDDE9E6)
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(16.dp)
-            ),
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = cardBackground
+        ),
+        border = BorderStroke(1.dp, borderColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.Start
+            modifier = Modifier.padding(15.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
                     painter = painterResource(iconRes),
-                    contentDescription = title,
-                    modifier = Modifier
-                        .size(24.dp)
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+
+                Spacer(Modifier.width(8.dp))
+
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = textSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(15.dp))
 
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
                 color = color,
+                fontSize = 19.sp,
                 fontWeight = FontWeight.Bold
             )
+        }
+    }
+}
+
+@Composable
+private fun LoadingDetails(textSecondary: Color) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            CircularProgressIndicator(
+                color = SharkyTeal,
+                strokeWidth = 3.dp
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = "Loading stock details...",
+                color = textSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyDetails(
+    onBack: () -> Unit,
+    textPrimary: Color,
+    textSecondary: Color
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(350.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CurrencyExchange,
+                contentDescription = null,
+                tint = SharkyTeal,
+                modifier = Modifier.size(54.dp)
+            )
+
+            Text(
+                text = "No Stock Selected",
+                color = textPrimary,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "Select a stock from the home screen.",
+                color = textSecondary,
+                textAlign = TextAlign.Center
+            )
+
+            Button(
+                onClick = onBack,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SharkyTeal,
+                    contentColor = SharkyNavy
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text("Back to Home", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
