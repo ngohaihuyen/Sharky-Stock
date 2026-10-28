@@ -9,9 +9,33 @@ import retrofit2.http.Query
 interface ApiService {
     @GET("eod/latest")
     suspend fun getStocks(
-        @Query("access_key") accessKey: String = "e79c039983faf91d490f1a0d08b3cc1e",
-        @Query("symbols") symbols: String = "AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA,NFLX,JPM,MA,JNJ,UNH,XOM,CVX,PG,HD,BAC,DIS,PFE,INTC,AMD,QCOM,IBM,ADBE,CRM,CSCO,NFLX,WMT,KO, NAB, MC,BLK,BX,ORCL,RBLX"
+        @Query("access_key") accessKey: String = "dbb36fe99f32cfe0364d5076f4f1ddb3",
+        @Query("symbols") symbols: String = "AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA,NFLX,JPM,MA,JNJ,UNH,XOM,CVX,PG,HD,BAC,DIS,PFE,INTC,AMD,QCOM,IBM,ADBE,CRM,CSCO,WMT,KO,NAB,MC,BLK,BX,ORCL,RBLX"
     ): StockResponse
+
+    @GET("eod")
+    suspend fun getHistoricalStocks(
+        @Query("access_key") accessKey: String,
+        @Query("symbols") symbols: String,
+        @Query("date_from") dateFrom: String,
+        @Query("date_to") dateTo: String,
+        @Query("sort") sort: String = "ASC",
+        @Query("limit") limit: Int = 1000
+    ): StockResponse
+
+    // End-of-day price history for ONE symbol, newest first
+
+    // End-of-day history for one stock symbol
+    @GET("eod")
+    suspend fun getStockHistory(
+        @Query("access_key") accessKey: String = "dbb36fe99f32cfe0364d5076f4f1ddb3",
+        @Query("symbols") symbols: String,
+        @Query("date_from") dateFrom: String,
+        @Query("date_to") dateTo: String,
+        @Query("sort") sort: String = "ASC",
+        @Query("limit") limit: Int = 100
+    ): StockResponse
+
 }
 
 val apiService: ApiService = Retrofit.Builder()

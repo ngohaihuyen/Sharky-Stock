@@ -13,4 +13,18 @@ class FakeApiService : ApiService {
         if (shouldThrowError) throw Exception("Fake API error")
         return StockResponse(data = stocks)
     }
+
+    var history: List<MarketstackStock> = emptyList()
+    var historyCallCount: Int = 0
+
+    override suspend fun getStockHistory(
+        accessKey: String,
+        symbols: String,
+        limit: Int,
+        sort: String
+    ): StockResponse {
+        historyCallCount++
+        if (shouldThrowError) throw Exception("Fake API error")
+        return StockResponse(data = history.filter { it.symbol == symbols }.take(limit))
+    }
 }
