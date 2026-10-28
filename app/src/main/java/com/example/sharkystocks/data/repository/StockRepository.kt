@@ -2,16 +2,22 @@ package com.example.sharkystocks.data.repository
 
 import android.content.Context
 import androidx.room.Room
+import com.example.sharkystocks.data.local.AlertEntity
 import com.example.sharkystocks.data.local.StockDatabase
 import com.example.sharkystocks.data.local.StockDetailEntity
 import com.example.sharkystocks.data.local.StockHistoryEntity
 import com.example.sharkystocks.data.local.StockListEntity
+import com.example.sharkystocks.data.local.WatchlistEntity
 import com.example.sharkystocks.data.model.ChartRange
 import com.example.sharkystocks.data.model.MarketstackStock
+import com.example.sharkystocks.data.model.Stock
 import com.example.sharkystocks.data.network.ApiService
 import com.example.sharkystocks.data.network.apiService
+import com.example.sharkystocks.utils.NotificationHelper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -48,6 +54,7 @@ open class StockRepository(
     private val stockListDao = db?.stockListDao()
     private val stockDetailDao = db?.stockDetailDao()
     private val stockHistoryDao = db?.stockHistoryDao()
+    private val alertAndWatchlistDao = db?.alertAndWatchlistDao()
 
 
     private var cachedSymbols: List<String>? = null
@@ -305,6 +312,71 @@ open class StockRepository(
             }
             .distinctBy { it.date }
             .sortedBy { it.date }
+    }
+
+    // --- Watchlist & Alert Methods ---
+    open fun getWatchlistSymbols(): Flow<List<String>> {
+        return alertAndWatchlistDao?.getAllWatchlistSymbols() ?: flowOf(emptyList())
+    }
+
+    open suspend fun isInWatchlist(symbol: String): Boolean = withContext(Dispatchers.IO) {
+        alertAndWatchlistDao?.isInWatchlist(symbol) ?: false
+    }
+
+    open suspend fun toggleWatchlist(symbol: String): Boolean = withContext(Dispatchers.IO) {
+        val dao = alertAndWatchlistDao ?: return@withContext false
+        val isFav = dao.isInWatchlist(symbol)
+        if (isFav) {
+            dao.removeFromWatchlist(WatchlistEntity(symbol))
+            false
+        } else {
+            dao.addToWatchlist(WatchlistEntity(symbol))
+            true
+        }
+    }
+
+    open suspend fun addPriceAlert(symbol: String, targetPrice: Double, isAbove: Boolean) = withContext(Dispatchers.IO) {
+        alertAndWatchlistDao?.insertAlert(
+            AlertEntity(
+                symbol = symbol,
+                targetPrice = targetPrice,
+                isAbove = isAbove
+            )
+        )
+    }
+
+    open suspend fun checkAlerts(currentStocks: List<Stock>) = withContext(Dispatchers.IO) {
+        val dao = alertAndWatchlistDao ?: return@withContext
+        val ctx = context ?: return@withContext
+        try {
+            val activeAlerts = dao.getActiveAlerts()
+            if (activeAlerts.isEmpty()) return@withContext
+
+            val notificationHelper = NotificationHelper(ctx)
+
+            for (alert in activeAlerts) {
+                val stock = currentStocks.find { it.symbol.equals(alert.symbol, ignoreCase = true) } ?: continue
+                val currentPrice = stock.price.replace("$", "").trim().toDoubleOrNull() ?: continue
+
+                val isTriggered = if (alert.isAbove) {
+                    currentPrice >= alert.targetPrice
+                } else {
+                    currentPrice <= alert.targetPrice
+                }
+
+                if (isTriggered) {
+                    notificationHelper.sendPriceAlertNotification(
+                        symbol = alert.symbol,
+                        currentPrice = currentPrice,
+                        targetPrice = alert.targetPrice,
+                        isAbove = alert.isAbove
+                    )
+                    dao.markAlertTriggered(alert.id)
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore alert check failure
+        }
     }
 
     companion object {

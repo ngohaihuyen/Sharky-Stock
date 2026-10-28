@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -35,6 +36,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -87,6 +90,8 @@ fun HomeScreen(
 ) {
     val screenState by viewModel.state.collectAsStateWithLifecycle()
     val miniChartPrices by viewModel.miniChartPrices.collectAsStateWithLifecycle()
+    val watchlistSymbols by viewModel.watchlistSymbols.collectAsStateWithLifecycle()
+    var selectedFilterTab by remember { mutableStateOf(0) } // 0: Tất cả, 1: Yêu thích
     var searchText by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
@@ -95,12 +100,17 @@ fun HomeScreen(
         else -> screenState.stocks.orEmpty()
     }
 
-    val filteredStocks = remember(allStocks, searchText) {
-        if (searchText.isBlank()) {
+    val filteredStocks = remember(allStocks, searchText, selectedFilterTab, watchlistSymbols) {
+        val baseList = if (selectedFilterTab == 1) {
+            allStocks.filter { it.symbol in watchlistSymbols }
+        } else {
             allStocks
+        }
+        if (searchText.isBlank()) {
+            baseList
         } else {
             val query = searchText.trim().lowercase()
-            allStocks.filter { stock ->
+            baseList.filter { stock ->
                 stock.symbol.lowercase().contains(query) ||
                         getCompanyName(stock.symbol).lowercase().contains(query) ||
                         getSector(stock.symbol).lowercase().contains(query)
@@ -310,6 +320,44 @@ fun HomeScreen(
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
+
+                // Watchlist & All Filter Chips
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedFilterTab == 0,
+                        onClick = { selectedFilterTab = 0 },
+                        label = { Text("Tất cả (${allStocks.size})") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = SharkyTeal,
+                            selectedLabelColor = SharkyNavy,
+                            containerColor = if (ThemeManager.isDarkMode) SharkyNavySoft else Color.White,
+                            labelColor = textSecondary
+                        )
+                    )
+
+                    FilterChip(
+                        selected = selectedFilterTab == 1,
+                        onClick = { selectedFilterTab = 1 },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = if (selectedFilterTab == 1) SharkyNavy else Color(0xFFFFD700),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        label = { Text("Yêu thích (${watchlistSymbols.size})") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = SharkyTeal,
+                            selectedLabelColor = SharkyNavy,
+                            containerColor = if (ThemeManager.isDarkMode) SharkyNavySoft else Color.White,
+                            labelColor = textSecondary
+                        )
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
             }

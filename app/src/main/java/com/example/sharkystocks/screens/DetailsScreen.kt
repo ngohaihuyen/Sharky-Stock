@@ -25,6 +25,11 @@ import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CurrencyExchange
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,10 +37,18 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,6 +82,10 @@ fun DetailsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val stock = state.selectedStock
+
+    var showAlertDialog by remember { mutableStateOf(false) }
+    val watchlistSymbols by viewModel.watchlistSymbols.collectAsStateWithLifecycle()
+    val isFavorite = stock?.symbol?.let { it in watchlistSymbols } ?: false
 
     val elevation by animateDpAsState(
         targetValue = 0.dp,
@@ -133,6 +150,44 @@ fun DetailsScreen(
                     color = SharkyMuted,
                     fontSize = 13.sp
                 )
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            if (stock != null) {
+                // Nút Đặt Cảnh Báo Giá 🔔
+                IconButton(
+                    onClick = { showAlertDialog = true },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.09f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Set Alert",
+                        tint = SharkyTeal
+                    )
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                // Nút Thêm vào Watchlist ⭐
+                IconButton(
+                    onClick = {
+                        viewModel.toggleWatchlist(stock.symbol)
+                    },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.09f))
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = "Watchlist",
+                        tint = if (isFavorite) Color(0xFFFFD700) else SharkyWhite.copy(alpha = 0.8f)
+                    )
+                }
             }
         }
 
@@ -449,6 +504,110 @@ fun DetailsScreen(
             }
 
             Spacer(Modifier.height(8.dp))
+        }
+
+        // Dialog đặt cảnh báo giá
+        if (showAlertDialog && stock != null) {
+            var targetPriceText by remember {
+                mutableStateOf(stock.price.replace("$", "").trim())
+            }
+            var isAbove by remember { mutableStateOf(true) }
+
+            AlertDialog(
+                onDismissRequest = { showAlertDialog = false },
+                containerColor = SharkyNavySoft,
+                title = {
+                    Text(
+                        text = "Đặt cảnh báo giá (${stock.symbol})",
+                        color = SharkyWhite,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Text(
+                            text = "Gửi thông báo khi giá:",
+                            color = SharkyMuted,
+                            fontSize = 13.sp
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { isAbove = true },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isAbove) SharkyTeal else Color.White.copy(alpha = 0.1f)
+                                ),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text(
+                                    text = "Tăng lên >=",
+                                    color = if (isAbove) SharkyNavy else SharkyWhite,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Button(
+                                onClick = { isAbove = false },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (!isAbove) SharkyTeal else Color.White.copy(alpha = 0.1f)
+                                ),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text(
+                                    text = "Giảm xuống <=",
+                                    color = if (!isAbove) SharkyNavy else SharkyWhite,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = targetPriceText,
+                            onValueChange = { targetPriceText = it },
+                            label = { Text("Mức giá mục tiêu ($)") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = SharkyWhite,
+                                unfocusedTextColor = SharkyWhite,
+                                focusedBorderColor = SharkyTeal,
+                                unfocusedBorderColor = SharkyLine,
+                                focusedLabelColor = SharkyTeal,
+                                unfocusedLabelColor = SharkyMuted
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val price = targetPriceText.toDoubleOrNull()
+                            if (price != null && price > 0) {
+                                viewModel.addPriceAlert(stock.symbol, price, isAbove)
+                                showAlertDialog = false
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SharkyTeal),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Lưu cảnh báo", color = SharkyNavy, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAlertDialog = false }) {
+                        Text("Hủy", color = SharkyMuted)
+                    }
+                }
+            )
         }
     }
 }

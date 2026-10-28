@@ -11,14 +11,23 @@ import com.example.sharkystocks.mvi.StockAction
 import com.example.sharkystocks.mvi.StockState
 import com.example.sharkystocks.mvi.stockReducer
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 open class StockViewModel(private val repository: StockRepository) : ViewModel() {
 
     private val _state = MutableStateFlow(StockState())
     val state: StateFlow<StockState> = _state.asStateFlow()
+
+    val watchlistSymbols: StateFlow<List<String>> = repository.getWatchlistSymbols()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     /**
      * Historical closing prices for mini charts on the Home Screen.
@@ -62,6 +71,7 @@ open class StockViewModel(private val repository: StockRepository) : ViewModel()
                 }
 
                 fireAction(StockAction.FetchSuccess(stocks))
+                repository.checkAlerts(stocks)
 
             } catch (e: Exception) {
                 fireAction(StockAction.FetchError("Failed to load stocks: ${e.message}"))
@@ -212,6 +222,18 @@ open class StockViewModel(private val repository: StockRepository) : ViewModel()
 
     fun selectChartRange(range: ChartRange) {
         fireAction(StockAction.SelectChartRange(range))
+    }
+
+    fun toggleWatchlist(symbol: String) {
+        viewModelScope.launch {
+            repository.toggleWatchlist(symbol)
+        }
+    }
+
+    fun addPriceAlert(symbol: String, targetPrice: Double, isAbove: Boolean) {
+        viewModelScope.launch {
+            repository.addPriceAlert(symbol, targetPrice, isAbove)
+        }
     }
 }
 
