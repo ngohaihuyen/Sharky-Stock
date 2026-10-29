@@ -168,7 +168,7 @@ fun HomeScreen(
                     ) {
                         Text(
                             text = "S",
-                            color = SharkyTeal,
+                            color = SharkyNavy,
                             fontSize = 25.sp,
                             fontWeight = FontWeight.Black
                         )
