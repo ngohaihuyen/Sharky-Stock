@@ -130,7 +130,7 @@ fun HomeScreen(
     )
 
     val pageBackground = if (ThemeManager.isDarkMode) {
-        SharkyNavy
+        SharkyTeal
     } else {
         Color(0xFFF2F7F6)
     }
@@ -179,7 +179,7 @@ fun HomeScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "SHARKY STOCKS",
-                            color = SharkyWhite,
+                            color = SharkyNavy,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 2.sp
