@@ -22,6 +22,8 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        val apiKey = project.findProperty("MARKETSTACK_API_KEY") as? String ?: "\"DEFAULT_KEY\""
+        buildConfigField("String", "MARKETSTACK_API_KEY", apiKey)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -44,6 +46,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

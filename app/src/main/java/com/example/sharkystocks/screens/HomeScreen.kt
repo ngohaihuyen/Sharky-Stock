@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -158,8 +159,8 @@ fun HomeScreen(
                     .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 22.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding(),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         modifier = Modifier
@@ -180,14 +181,14 @@ fun HomeScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "SHARKY",
+                            text = "SHARKY STOCKS",
                             color = SharkyWhite,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 2.sp
                         )
                         Text(
-                            text = "STOCKS  /  MARKET WATCH",
+                            text = "MARKET WATCH",
                             color = SharkyMuted,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,

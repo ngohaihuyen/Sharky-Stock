@@ -95,7 +95,6 @@ fun ChartScreen(
     val state = viewModel.state.collectAsStateWithLifecycle()
     val selectedStock = state.value.selectedStock
 
-    // Khai báo màu động dựa trên ThemeManager
     val pageBackground = if (ThemeManager.isDarkMode) SharkyNavy else Color(0xFFF2F7F6)
     val textPrimary = if (ThemeManager.isDarkMode) SharkyWhite else Color(0xFF102B35)
     val textSecondary = if (ThemeManager.isDarkMode) SharkyMuted else Color(0xFF60777D)
@@ -113,7 +112,6 @@ fun ChartScreen(
             .fillMaxSize()
             .background(pageBackground)
     ) {
-        // Header đồng bộ với HomeScreen và DetailsScreen
         Box(
             modifier = Modifier
                 .fillMaxWidth()

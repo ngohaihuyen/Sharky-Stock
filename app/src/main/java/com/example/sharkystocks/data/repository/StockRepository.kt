@@ -231,8 +231,11 @@ open class StockRepository(
                 try {
                     fetchHistoryFromNetworkAndCacheRoom(symbol)
                 } catch (e: Exception) {
-                    // Offline / rate-limited: fall back to old data if we have any
-                    if (cached.isNotEmpty()) cached else throw e
+                    if (cached.isNotEmpty()) {
+                        cached
+                    } else {
+                        emptyList()
+                    }
                 }
             }
         }

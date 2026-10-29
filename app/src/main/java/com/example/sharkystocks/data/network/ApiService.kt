@@ -5,30 +5,19 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import com.example.sharkystocks.BuildConfig
 
 interface ApiService {
     @GET("eod/latest")
     suspend fun getStocks(
-        @Query("access_key") accessKey: String = "dbb36fe99f32cfe0364d5076f4f1ddb3",
-        @Query("symbols") symbols: String = "AAPL,MSFT,GOOGL,AMZN,META,TSLA,NVDA,NFLX,JPM,MA,JNJ,UNH,XOM,CVX,PG,HD,BAC,DIS,PFE,INTC,AMD,QCOM,IBM,ADBE,CRM,CSCO,WMT,KO,NAB,MC,BLK,BX,ORCL,RBLX"
+        @Query("access_key") accessKey: String = BuildConfig.MARKETSTACK_API_KEY,
+        @Query("symbols") symbols: String = "AAPL,MSFT,GOOGL,AMZN,META,TSLA,JPM,IBM,ORCL,RBLX"
     ): StockResponse
 
-    @GET("eod")
-    suspend fun getHistoricalStocks(
-        @Query("access_key") accessKey: String,
-        @Query("symbols") symbols: String,
-        @Query("date_from") dateFrom: String,
-        @Query("date_to") dateTo: String,
-        @Query("sort") sort: String = "ASC",
-        @Query("limit") limit: Int = 1000
-    ): StockResponse
 
-    // End-of-day price history for ONE symbol, newest first
-
-    // End-of-day history for one stock symbol
     @GET("eod")
     suspend fun getStockHistory(
-        @Query("access_key") accessKey: String = "dbb36fe99f32cfe0364d5076f4f1ddb3",
+        @Query(value = "access_key") accessKey: String = BuildConfig.MARKETSTACK_API_KEY,
         @Query("symbols") symbols: String,
         @Query("date_from") dateFrom: String,
         @Query("date_to") dateTo: String,
