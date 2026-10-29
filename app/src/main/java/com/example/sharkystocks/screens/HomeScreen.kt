@@ -76,7 +76,7 @@ import com.example.sharkystocks.ui.theme.ThemeManager
 private val SharkyNavy = Color(0xFFD1DDE3)
 private val SharkyNavySoft = Color(0xFF071A23)
 private val SharkyTeal = Color(0xFF55E6B1)
-private val SharkyMuted = Color(0xFF8FA8AF)
+private val SharkyMuted = Color(0xFF586A6F)
 private val SharkyLine = Color(0xFF24414A)
 private val SharkyWhite = Color(0xFFF4FAF8)
 
@@ -108,12 +108,10 @@ fun HomeScreen(
             }
         }
     }
-    // Load the home stock list
     LaunchedEffect(Unit) {
         viewModel.refreshHomeScreen()
     }
 
-    // Load historial prices for the mini charts
     LaunchedEffect(allStocks) {
         val symbols = allStocks
             .map { it.symbol.trim().uppercase() }
@@ -122,15 +120,14 @@ fun HomeScreen(
 
         if (symbols.isNotEmpty()) {
             viewModel.refreshMiniCharts(symbols)
-            //duyệt từng mã, gọi refreshMiniChartScreen() lấy 7 phiên cuối (MINI_CHART_POINTS),
-            // lưu vào miniChartPrices, mỗi mã xử lý riêng nên một mã lỗi k làm hỏng các mã khác
+
         }
     }
 
     val isLoading = screenState.stockListState == StockListState.Loading
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isLoading,
-        onRefresh = { viewModel.refreshStocks() } // call function refresh data trong ViewModel khi vuốt
+        onRefresh = { viewModel.refreshStocks() }
     )
 
     val pageBackground = if (ThemeManager.isDarkMode) {
@@ -149,7 +146,6 @@ fun HomeScreen(
             .background(pageBackground)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Compact branded header: less vertical space, stronger visual hierarchy.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -389,9 +385,6 @@ fun HomeScreen(
                     contentColor = SharkyTeal
                 )
 
-//Khi người dùng kéo màn hình xuống, PullRefreshIndicator sẽ xuất hiện mượt mà
-// từ trên top màn hình, xoay tròn báo hiệu quá trình tải dữ liệu đang diễn ra
-// và tự động ẩn đi khi isLoading chuyển về false
             }
 
             Text(
@@ -767,10 +760,6 @@ fun EnhancedStockItem(
         }
     }
 }
-
-
-//x: Chia đều chiều rộng canvas theo index
-//Y: Chuẩn hóa giá về khoảng 0, 1, đảo ngược trục (android gốc tọa độ ở trên) và cộng padding
 
 @Composable
 private fun MiniMovementChart(

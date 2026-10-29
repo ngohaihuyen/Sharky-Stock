@@ -115,6 +115,7 @@ fun ChartScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .statusBarsPadding()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(SharkyNavy, Color(0xFF0B3037))
@@ -123,7 +124,7 @@ fun ChartScreen(
                 .padding(vertical = 18.dp, horizontal = 16.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxSize().statusBarsPadding(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
