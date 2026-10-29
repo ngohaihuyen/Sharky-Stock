@@ -73,10 +73,10 @@ import com.example.sharkystocks.ui.theme.ChartGreen
 import com.example.sharkystocks.ui.theme.ChartRed
 import com.example.sharkystocks.ui.theme.ThemeManager
 
-private val SharkyNavy = Color(0xFFD1DDE3)
+private val SharkyNavy = Color(0xFF071A23)
 private val SharkyNavySoft = Color(0xFF071A23)
 private val SharkyTeal = Color(0xFF55E6B1)
-private val SharkyMuted = Color(0xFF586A6F)
+private val SharkyMuted = Color(0xFF8FA8AF)
 private val SharkyLine = Color(0xFF24414A)
 private val SharkyWhite = Color(0xFFF4FAF8)
 
@@ -84,8 +84,7 @@ private val SharkyWhite = Color(0xFFF4FAF8)
 @Composable
 fun HomeScreen(
     navController: NavController,
-    viewModel: StockViewModel
-) {
+    viewModel: StockViewModel) {
     val screenState by viewModel.state.collectAsStateWithLifecycle()
     val miniChartPrices by viewModel.miniChartPrices.collectAsStateWithLifecycle()
     var searchText by remember { mutableStateOf("") }
