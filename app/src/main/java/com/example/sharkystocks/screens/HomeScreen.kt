@@ -122,6 +122,8 @@ fun HomeScreen(
 
         if (symbols.isNotEmpty()) {
             viewModel.refreshMiniCharts(symbols)
+            //duyệt từng mã, gọi refreshMiniChartScreen() lấy 7 phiên cuối (MINI_CHART_POINTS),
+            // lưu vào miniChartPrices, mỗi mã xử lý riêng nên một mã lỗi k làm hỏng các mã khác
         }
     }
 
@@ -156,7 +158,7 @@ fun HomeScreen(
                             colors = listOf(SharkyNavy, Color(0xFF0B3037))
                         )
                     )
-                    .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 22.dp)
+                    .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 22.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().statusBarsPadding(),

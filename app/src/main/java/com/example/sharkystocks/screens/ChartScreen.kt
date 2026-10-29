@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -79,7 +80,6 @@ import kotlin.math.roundToInt
 
 private const val GRID_LINES = 3
 
-// Bảng màu chuẩn Sharky
 private val SharkyNavy = Color(0xFF071A23)
 private val SharkyNavySoft = Color(0xFF071A23)
 private val SharkyTeal = Color(0xFF55E6B1)
@@ -610,6 +610,12 @@ fun StockLineChart(
                 }
                 fillPath.lineTo(xAt(visibleCount - 1), size.height)
                 fillPath.close()
+
+
+//sd Canvas của Compose: đổi giá thành toạ độ (x, y), nối bằng Path, tô gradient bên dưới
+//Ánh xạ tọa độ (x, y): dựa vào biên độ giá min/max để quy đổi time & price thành tđộ pixel t/ứng
+// path & gradient dùng đối tượng Path để nối các điểm thành đường gấp khúc
+// pointerInput: lắng nghe thao tác user để hiển thị đường dọc cùng điểm tròn chi tiết tại mốc giá
 
                 drawPath(
                     path = fillPath,

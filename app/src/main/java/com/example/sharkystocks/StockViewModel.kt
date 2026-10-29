@@ -171,6 +171,7 @@ open class StockViewModel(private val repository: StockRepository) : ViewModel()
         symbols: List<String>,
         forceRefresh: Boolean = false
     ) {
+
         viewModelScope.launch {
             symbols.distinct().forEach { symbol ->
                 try {

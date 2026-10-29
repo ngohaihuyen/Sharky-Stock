@@ -35,7 +35,7 @@ open class StockRepository(
     private fun getHistoryDateRange(): Pair<String, String> {
         val to = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
         val from = to.clone() as Calendar
-        from.add(Calendar.DAY_OF_YEAR, -14)
+        from.add(Calendar.DAY_OF_YEAR, -14) //muốn xem 3m 6m config lại số thành -190
 
         return formatApiDate(from) to formatApiDate(to)
     }
