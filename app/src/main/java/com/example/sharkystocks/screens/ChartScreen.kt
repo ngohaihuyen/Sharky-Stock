@@ -123,7 +123,7 @@ fun ChartScreen(
                 .padding(vertical = 18.dp, horizontal = 16.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize().statusBarsPadding(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
@@ -616,6 +616,7 @@ fun StockLineChart(
 //Ánh xạ tọa độ (x, y): dựa vào biên độ giá min/max để quy đổi time & price thành tđộ pixel t/ứng
 // path & gradient dùng đối tượng Path để nối các điểm thành đường gấp khúc
 // pointerInput: lắng nghe thao tác user để hiển thị đường dọc cùng điểm tròn chi tiết tại mốc giá
+//pointerInput để bắt tọa độ Offset (trục X, Y) khi user chạm hoặc kéo ngón tay trên biểu đồ
 
                 drawPath(
                     path = fillPath,

@@ -73,7 +73,7 @@ import com.example.sharkystocks.ui.theme.ChartGreen
 import com.example.sharkystocks.ui.theme.ChartRed
 import com.example.sharkystocks.ui.theme.ThemeManager
 
-private val SharkyNavy = Color(0xFF071A23)
+private val SharkyNavy = Color(0xFFD1DDE3)
 private val SharkyNavySoft = Color(0xFF071A23)
 private val SharkyTeal = Color(0xFF55E6B1)
 private val SharkyMuted = Color(0xFF8FA8AF)
@@ -130,7 +130,7 @@ fun HomeScreen(
     val isLoading = screenState.stockListState == StockListState.Loading
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isLoading,
-        onRefresh = { viewModel.refreshStocks() }
+        onRefresh = { viewModel.refreshStocks() } // call function refresh data trong ViewModel khi vuốt
     )
 
     val pageBackground = if (ThemeManager.isDarkMode) {
@@ -388,6 +388,10 @@ fun HomeScreen(
                     backgroundColor = cardBackground,
                     contentColor = SharkyTeal
                 )
+
+//Khi người dùng kéo màn hình xuống, PullRefreshIndicator sẽ xuất hiện mượt mà
+// từ trên top màn hình, xoay tròn báo hiệu quá trình tải dữ liệu đang diễn ra
+// và tự động ẩn đi khi isLoading chuyển về false
             }
 
             Text(
@@ -765,11 +769,9 @@ fun EnhancedStockItem(
 }
 
 
-/**
- * Draws a clear historical sparkline from real closing prices.
- * Prices must be ordered from oldest to newest.
- * No synthetic points are generated when historical data is unavailable.
- */
+//x: Chia đều chiều rộng canvas theo index
+//Y: Chuẩn hóa giá về khoảng 0, 1, đảo ngược trục (android gốc tọa độ ở trên) và cộng padding
+
 @Composable
 private fun MiniMovementChart(
     prices: List<Float>,

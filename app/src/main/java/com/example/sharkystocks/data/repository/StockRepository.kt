@@ -197,8 +197,6 @@ open class StockRepository(
     }
 
 
-    // ---------------- Chart (price history) ----------------
-
     open suspend fun refreshChartScreen(
         symbol: String,
         forceRefresh: Boolean = false
@@ -298,7 +296,7 @@ open class StockRepository(
             .map { ms ->
                 StockHistoryEntity(
                     symbol = ms.symbol,
-                    date = ms.date!!.take(10), // "2025-10-17T00:00:00+0000" -> "2025-10-17"
+                    date = ms.date!!.take(10), //
                     open = ms.open,
                     high = ms.high,
                     low = ms.low,
@@ -311,10 +309,8 @@ open class StockRepository(
     }
 
     companion object {
-        // EOD data only changes once a day -> re-use cached history for 6 hours
         private const val HISTORY_CACHE_DURATION_MS = 6 * 60 * 60 * 1000L
 
-        // Number of historical points displayed in each mini chart.
         private const val MINI_CHART_POINTS = 7
     }
 }
